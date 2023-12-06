@@ -24,7 +24,7 @@ public class Main : MonoBehaviour
 
         ui.CreateDiagram(neuralNetwork);
 
-        loader = new FunctionDataset(datasetSize, Circle, new Vector2(0, 1));
+        loader = new FunctionDataset(datasetSize, Sine, new Vector2(0, 1));
 
         neuralNetwork.StartTraining(loader, this);
     }

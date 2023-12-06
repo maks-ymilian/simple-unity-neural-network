@@ -440,7 +440,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   neuralNetworkSettings:
-    layers: 02000000100000001000000001000000
+    layers: 0200000010000000100000001000000001000000
     weightInitRange: {x: -0.3, y: 0.3}
     biasInitRange: {x: -0.1, y: 0.1}
     learningRate: 0.0001
