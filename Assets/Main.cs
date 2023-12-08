@@ -12,19 +12,19 @@ public class Main : MonoBehaviour
     [SerializeField] bool showDataset;
     [SerializeField] bool showFunction;
 
-    [SerializeField] NeuralNetDiagram ui;
+    [SerializeField] NNDiagram diagram  ;
     [SerializeField] DrawingArea drawingArea;
 
     NeuralNetwork neuralNetwork;
 
     private void Awake()
     {
-        //neuralNetwork = new NeuralNetwork(neuralNetworkSettings);
-        //neuralNetwork.InitializeRandomParameters();
+        neuralNetwork = new NeuralNetwork(neuralNetworkSettings);
+        neuralNetwork.InitializeRandomParameters();
 
-        //ui.CreateDiagram(neuralNetwork);
+        diagram.Create(neuralNetwork);
 
-        ////var loader = new FunctionDataset(datasetSize, Sine, new Vector2(0, 1));
+        //var loader = new FunctionDataset(datasetSize, Sine, new Vector2(0, 1));
         //var loader = new MNISTDataset();
 
         //neuralNetwork.StartTraining(loader, this);
