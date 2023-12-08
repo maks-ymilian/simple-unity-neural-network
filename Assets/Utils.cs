@@ -27,6 +27,17 @@ public static class Utils
         }
     }
 
+    public static Vector2 GetNormalizedVector(this Bounds bounds, Vector2 point)
+    {
+        Vector2 relativePosition = point - (Vector2)bounds.min;
+        Vector2 boundsSize = bounds.size;
+
+        float normalizedX = relativePosition.x / boundsSize.x;
+        float normalizedY = relativePosition.y / boundsSize.y;
+
+        return new Vector2(normalizedX, normalizedY);
+    }
+
     public static float Sigmoid(float x)
     {
         float k = Mathf.Exp(x);

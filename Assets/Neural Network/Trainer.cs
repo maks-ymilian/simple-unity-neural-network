@@ -9,13 +9,35 @@ public partial class NeuralNetwork
     public float currentCost { get; private set; }
 
     DatasetLoader loader;
-
     float[] gradient;
+    Coroutine trainLoop;
+    MonoBehaviour monoBehaviour;
 
     public void StartTraining(DatasetLoader datasetLoader, MonoBehaviour monoBehaviour)
     {
+        if (trainLoop != null)
+            return;
+
+        this.monoBehaviour = monoBehaviour;
         loader = datasetLoader;
-        monoBehaviour.StartCoroutine(TrainLoop());
+        trainLoop = monoBehaviour.StartCoroutine(TrainLoop());
+    }
+
+    public void StopTraining()
+    {
+        if (trainLoop == null)
+            return;
+
+        monoBehaviour.StopCoroutine(trainLoop);
+        trainLoop = null;
+    }
+
+    public void ResumeTraining()
+    {
+        if (trainLoop != null)
+            return;
+
+        trainLoop = monoBehaviour.StartCoroutine(TrainLoop());
     }
 
     IEnumerator TrainLoop()

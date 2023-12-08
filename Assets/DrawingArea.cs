@@ -1,104 +1,149 @@
-using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class DrawingArea : MonoBehaviour
 {
-    [SerializeField] int radius;
+    const int numThreads = 8;
+    [SerializeField] ComputeShader lineShader;
+    [SerializeField] ComputeShader clearShader;
+    [SerializeField] int textureSize;
 
-    [SerializeField] Vector2Int size;
-    [SerializeField] float pixelSize;
+    List<Vector2> lastPath = new List<Vector2>();
 
-    [SerializeField] GameObject pixelPrefab;
-
-    [SerializeField] Dictionary<Vector2Int, SpriteRenderer> pixels;
+    bool mouseHeld;
 
     Bounds screenBounds;
+    RenderTexture renderTexture;
 
-    Vector2Int lastPos;
-
-    public float[] GetTexture()
+    public byte[] textureData
     {
-        float[] ret = new float[pixels.Count];
-
-        int i = 0;
-        foreach (var pixel in pixels.Values)
+        get
         {
-            ret[i] = pixel.color.r;
-            i++;
-        }
-
-        return ret;
-    }
-
-    public void SetTexture(float[] texture)
-    {
-        int i = 0;
-        foreach (var pixel in pixels.Values)
-        {
-            Color color = new Color(texture[i], texture[i], texture[i]);
-            pixel.color = color;
-            i++;
+            return GetRenderTexturePixels(renderTexture);
         }
     }
 
     private void Awake()
     {
-        pixels = new Dictionary<Vector2Int, SpriteRenderer>();
-
         Vector2 boundsCentre = (Vector2)Camera.main.WorldToScreenPoint(transform.position);
-        Vector2 boundsSize = Camera.main.WorldToScreenPoint(new Vector2(size.x * pixelSize, size.y * pixelSize)) - (Vector3)boundsCentre;
+        Vector2 boundsMax = Camera.main.WorldToScreenPoint((Vector2)(transform.position + transform.localScale / 2));
+        Vector2 boundsMin = Camera.main.WorldToScreenPoint((Vector2)(transform.position - transform.localScale / 2));
+        Vector2 boundsSize = boundsMax - boundsMin;
         screenBounds = new Bounds(boundsCentre, boundsSize);
 
-        for (int y = 0; y < size.x; y++)
-        {
-            for (int x = 0; x < size.y; x++)
-            {
-                GameObject pixel = Instantiate(pixelPrefab, new Vector3((x - (float)size.x / 2) * pixelSize + pixelSize / 2, (-y + (float)size.y / 2) * pixelSize - pixelSize / 2, 0), Quaternion.identity, transform);
-                pixel.transform.localScale = new Vector3(pixelSize, pixelSize, 1);
+        renderTexture = new RenderTexture(textureSize, textureSize, 0, RenderTextureFormat.R8);
+        renderTexture.filterMode = FilterMode.Point;
+        renderTexture.enableRandomWrite = true;
+        renderTexture.Create();
 
-                pixels.Add(new Vector2Int(x, size.y-y), pixel.GetComponent<SpriteRenderer>());
-            }
+        GetComponent<Renderer>().material.SetTexture("_MainTex", renderTexture);
+    }
+
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0) && screenBounds.Contains(Input.mousePosition))
+            mouseHeld = true;
+        else if (Input.GetMouseButtonUp(0))
+        {
+            mouseHeld = false;
+            lastPath.Add(new Vector2(-1, 0));
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            ClearTexture();
+            PreProcessPath();
+            DrawLastPath();
+            lastPath.Clear();
+        }
+
+        if (mouseHeld)
+        {
+            lastPath.Add(screenBounds.GetNormalizedVector(Input.mousePosition));
+
+            int pointCount = lastPath.Count;
+            if (pointCount >= 2)
+                DrawLine(lastPath[pointCount - 2], lastPath[pointCount - 1]);
         }
     }
 
-    //private void Update()
-    //{
-    //    if (screenBounds.Contains(Input.mousePosition) && Input.GetMouseButton(0) || Input.GetMouseButton(1))
-    //    {
-    //        Vector2 _pixelPos = new Vector2((Input.mousePosition.x - screenBounds.min.x) / screenBounds.size.x * size.x, (Input.mousePosition.y - screenBounds.min.y) / screenBounds.size.y * size.y);
-    //        Vector2Int pixelPos = new Vector2Int((int)(_pixelPos.x), (int)(_pixelPos.y + 1));
-
-    //        bool erase = Input.GetMouseButton(0);
-
-    //        if (lastPos != pixelPos)
-    //            DrawCircle(pixelPos, erase);
-
-    //        lastPos = pixelPos;
-    //    }
-    //}
-
-    void DrawCircle(Vector2Int pos, bool erase)
+    void PreProcessPath()
     {
-        for (int x = pos.x - radius; x < pos.x + radius; x++)
+        if (lastPath.Count == 0)
+            return;
+
+        Bounds bounds = new Bounds(lastPath[0], Vector2.zero);
+        for (int i = 1; i < lastPath.Count; i++)
         {
-            for (int y = pos.y - radius; y < pos.y + radius; y++)
-            {
-                Vector2Int currentPos = new Vector2Int(x, y);
+            Vector2 point = lastPath[i];
 
-                float dist = Mathf.Clamp01(1 - (Vector2.Distance(pos, currentPos) / (float)radius));
+            if (point.x == -1)
+                continue;
 
-                if (!pixels.ContainsKey(currentPos))
-                    continue;
-
-                Color color = pixels[currentPos].color;
-                color += new Color(dist, dist, dist) * (erase ? 1 : -1);
-                color.a = 1;
-                color.r = Mathf.Clamp01(color.r);
-                color.g = Mathf.Clamp01(color.g);
-                color.b = Mathf.Clamp01(color.b);
-                pixels[currentPos].color = color;
-            }
+            bounds.Encapsulate(point);
         }
+
+        Vector2 offset = new Vector2(0.5f, 0.5f) - (Vector2)bounds.center;
+        Vector2 size = bounds.size;
+        float scaleFactor = 1 / Mathf.Max(size.x, size.y) * 0.6f;
+
+        for (int i = 0; i < lastPath.Count; i++)
+        {
+            Vector2 point = lastPath[i];
+
+            if (point.x == -1)
+                continue;
+
+            lastPath[i] = new Vector2(
+                ((point.x - 0.5f + offset.x) * scaleFactor) + 0.5f,
+                ((point.y - 0.5f + offset.y) * scaleFactor) + 0.5f);
+        }
+    }
+
+    void DrawLastPath()
+    {
+        for (int i = 1; i < lastPath.Count; i++)
+        {
+            DrawLine(lastPath[i - 1], lastPath[i]);
+        }
+    }
+
+    void DrawLine(Vector2 from, Vector2 to)
+    {
+        if (from.x == -1 || to.x == -1)
+            return;
+
+        lineShader.SetVector("from", from);
+        lineShader.SetVector("to", to);
+        lineShader.SetInt("textureSize", textureSize);
+        lineShader.SetTexture(0, "outTexture", renderTexture);
+
+        int threadGroups = (int)Mathf.Ceil((float)textureSize / numThreads);
+        lineShader.Dispatch(0, threadGroups, threadGroups, 1);
+    }
+
+    public byte[] GetRenderTexturePixels(RenderTexture renderTexture)
+    {
+        RenderTexture currentRT = RenderTexture.active;
+
+        var texture = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.R8, false);
+
+        RenderTexture.active = renderTexture;
+        texture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+        texture.Apply();
+
+        RenderTexture.active = currentRT;
+
+        return texture.GetRawTextureData();
+    }
+
+    void ClearTexture()
+    {
+        clearShader.SetTexture(0, "outTexture", renderTexture);
+
+        int threadGroups = (int)Mathf.Ceil((float)textureSize / numThreads);
+        clearShader.Dispatch(0, threadGroups, threadGroups, 1);
     }
 }
