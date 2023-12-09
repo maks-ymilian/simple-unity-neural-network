@@ -42,8 +42,8 @@ public class NNDiagram : MonoBehaviour
                     break;
 
                 Vector2 pos;
-                pos.x = layer * layerSpacing * scale - (float)nn.layers.Length / 2;
-                pos.y = (-neuron + (float)layerNeuronCount / 2) * neuronSpacing * scale;
+                pos.x = layer * layerSpacing * scale - (nn.layers.Length - 1) * layerSpacing * scale / 2f;
+                pos.y = (-neuron - 0.5f + layerNeuronCount / 2f) * neuronSpacing * scale;
                 pos += (Vector2)transform.position;
 
                 neuronPositions.Add(pos);

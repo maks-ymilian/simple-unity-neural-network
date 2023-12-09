@@ -51,7 +51,7 @@ public class DrawingArea : MonoBehaviour
             lastPath.Add(new Vector2(-1, 0));
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.G))
         {
             ClearTexture();
             PreProcessPath();
@@ -139,7 +139,7 @@ public class DrawingArea : MonoBehaviour
         return texture.GetRawTextureData();
     }
 
-    void ClearTexture()
+    public void ClearTexture()
     {
         clearShader.SetTexture(0, "outTexture", renderTexture);
 

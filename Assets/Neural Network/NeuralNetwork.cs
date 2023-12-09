@@ -89,6 +89,20 @@ public partial class NeuralNetwork
         }
     }
 
+    public void SetInputs(byte[] inputs)
+    {
+        if (inputs.Length != layers[0].neurons.Length)
+        {
+            Debug.LogError("inputs length must be the same as number of neurons in input layer");
+            return;
+        }
+
+        for (int i = 0; i < inputs.Length; i++)
+        {
+            layers[0].neurons[i].activation = (float)inputs[i] / 255;
+        }
+    }
+
     /// <summary>
     /// sets all parameters for all neurons with weights first and bias second
     /// </summary>

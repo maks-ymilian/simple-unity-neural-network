@@ -12,10 +12,12 @@ public class Main : MonoBehaviour
     [SerializeField] bool showDataset;
     [SerializeField] bool showFunction;
 
-    [SerializeField] NNDiagram diagram  ;
+    [SerializeField] NNDiagram diagram;
     [SerializeField] DrawingArea drawingArea;
 
     NeuralNetwork neuralNetwork;
+
+    bool training = true;
 
     private void Awake()
     {
@@ -25,29 +27,37 @@ public class Main : MonoBehaviour
         diagram.Create(neuralNetwork);
 
         //var loader = new FunctionDataset(datasetSize, Sine, new Vector2(0, 1));
-        //var loader = new MNISTDataset();
+        var loader = new MNISTDataset();
 
-        //neuralNetwork.StartTraining(loader, this);
+        neuralNetwork.StartTraining(loader, this);
     }
 
     private void Update()
     {
-        //ui.UpdateText(neuralNetwork.currentCost, 1);
-        //ui.UpdateColors();
+        if (Input.GetKey(KeyCode.Space))
+        {
+            training = false;
+            neuralNetwork.StopTraining();
+            drawingArea.ClearTexture();
+        }
+        else if (Input.GetKey(KeyCode.N))
+        {
+            training = true;
+            neuralNetwork.ResumeTraining();
+            drawingArea.ClearTexture();
+        }
 
-        //if (Input.GetKey(KeyCode.Space))
-        //{
-        //    neuralNetwork.StopTraining();
-        //    drawingArea.Clear();
-        //}
-        //else if (Input.GetKey(KeyCode.N))
-        //{
-        //    neuralNetwork.ResumeTraining();
-        //    drawingArea.Clear();
-        //}
-
-        //neuralNetwork.SetInputs(drawingArea.GetTexture());
-        //neuralNetwork.ForwardPropagate();
+        if (training)
+        {
+            diagram.UpdateWeightColors();
+        }
+        else
+        {
+            byte[] inputs = drawingArea.textureData;
+            neuralNetwork.SetInputs(inputs);
+            neuralNetwork.ForwardPropagate();
+            diagram.UpdateActivationColors();
+        }
 
         //float[] texture = new float[28 * 28];
         //int i = 0;
