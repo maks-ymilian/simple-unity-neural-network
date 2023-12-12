@@ -1,8 +1,5 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using static NeuralNetwork;
-using UnityEngine.UI;
 
 public class NNDiagram : MonoBehaviour
 {

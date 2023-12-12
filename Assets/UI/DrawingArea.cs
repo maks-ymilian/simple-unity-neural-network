@@ -1,14 +1,13 @@
 using System.Collections.Generic;
-using System.Drawing;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class DrawingArea : MonoBehaviour
 {
     const int numThreads = 8;
-    [SerializeField] ComputeShader lineShader;
+    [SerializeField] ComputeShader lineDrawShader;
     [SerializeField] ComputeShader clearShader;
-    [SerializeField] int textureSize;
+    [SerializeField] int _textureSize;
+    [SerializeField] bool allowMouseDrawing = true;
 
     List<Vector2> lastPath = new List<Vector2>();
 
@@ -16,6 +15,9 @@ public class DrawingArea : MonoBehaviour
 
     Bounds screenBounds;
     RenderTexture renderTexture;
+    bool initialized;
+
+    public int textureSize { get { return _textureSize; } }
 
     public byte[] textureData
     {
@@ -26,6 +28,11 @@ public class DrawingArea : MonoBehaviour
     }
 
     private void Awake()
+    {
+        if (!initialized) Initialize();
+    }
+
+    void Initialize()
     {
         Vector2 boundsCentre = (Vector2)Camera.main.WorldToScreenPoint(transform.position);
         Vector2 boundsMax = Camera.main.WorldToScreenPoint((Vector2)(transform.position + transform.localScale / 2));
@@ -39,10 +46,15 @@ public class DrawingArea : MonoBehaviour
         renderTexture.Create();
 
         GetComponent<Renderer>().material.SetTexture("_MainTex", renderTexture);
+
+        initialized = true;
     }
 
     private void Update()
     {
+        if (!allowMouseDrawing)
+            return;
+
         if (Input.GetMouseButtonDown(0) && screenBounds.Contains(Input.mousePosition))
             mouseHeld = true;
         else if (Input.GetMouseButtonUp(0))
@@ -51,7 +63,7 @@ public class DrawingArea : MonoBehaviour
             lastPath.Add(new Vector2(-1, 0));
         }
 
-        if (Input.GetKeyDown(KeyCode.G))
+        if (Input.GetKeyDown(KeyCode.C))
         {
             ClearTexture();
             PreProcessPath();
@@ -115,13 +127,13 @@ public class DrawingArea : MonoBehaviour
         if (from.x == -1 || to.x == -1)
             return;
 
-        lineShader.SetVector("from", from);
-        lineShader.SetVector("to", to);
-        lineShader.SetInt("textureSize", textureSize);
-        lineShader.SetTexture(0, "outTexture", renderTexture);
+        lineDrawShader.SetVector("from", from);
+        lineDrawShader.SetVector("to", to);
+        lineDrawShader.SetInt("textureSize", textureSize);
+        lineDrawShader.SetTexture(0, "outTexture", renderTexture);
 
         int threadGroups = (int)Mathf.Ceil((float)textureSize / numThreads);
-        lineShader.Dispatch(0, threadGroups, threadGroups, 1);
+        lineDrawShader.Dispatch(0, threadGroups, threadGroups, 1);
     }
 
     public byte[] GetRenderTexturePixels(RenderTexture renderTexture)
@@ -145,5 +157,15 @@ public class DrawingArea : MonoBehaviour
 
         int threadGroups = (int)Mathf.Ceil((float)textureSize / numThreads);
         clearShader.Dispatch(0, threadGroups, threadGroups, 1);
+    }
+
+    public void SetRawTextureData(byte[] bytes)
+    {
+        if (renderTexture == null) Initialize();
+
+        var texture = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.R8, false);
+        texture.LoadRawTextureData(bytes);
+        texture.Apply();
+        Graphics.CopyTexture(texture, renderTexture);
     }
 }

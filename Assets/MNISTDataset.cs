@@ -8,6 +8,7 @@ public class MNISTDataset : DatasetLoader
     const string path = "D:\\Unity Projects\\N\\Assets\\MNIST_CSV\\mnist_train.csv";
 
     public int epoch { get; set; }
+    int totalItemsDrawn;
 
     public MNISTDataset()
     {
@@ -28,6 +29,10 @@ public class MNISTDataset : DatasetLoader
 
     public DatasetItem RandomItem()
     {
+        totalItemsDrawn++;
+        if (totalItemsDrawn >= datasetString.Length)
+            epoch++;
+
         int index = Random.Range(0, datasetString.Length);
         string itemString = datasetString[index];
         string[] stringValues = itemString.Split(',');

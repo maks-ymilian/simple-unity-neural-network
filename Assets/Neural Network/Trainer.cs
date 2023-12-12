@@ -44,13 +44,13 @@ public partial class NeuralNetwork
     {
         while (true)
         {
-            TrainBatchSingleThread();
+            TrainBatch();
 
             yield return new WaitForEndOfFrame();
         }
     }
 
-    void TrainBatchSingleThread()
+    void TrainBatch()
     {
         DatasetItem[] batch = NextBatch();
         Array.Clear(gradient, 0, gradient.Length);
@@ -70,60 +70,6 @@ public partial class NeuralNetwork
         currentCost = cost;
 
         AddToParameters(gradient);
-    }
-
-    void f()
-    {
-        int threadCount = 8;
-        int itemsLeft = settings.batchSize;
-        int itemsPerThread = settings.batchSize / threadCount;
-
-        DatasetItem[] batch = NextBatch();
-
-        Thread[] threads = new Thread[threadCount];
-        float[][] threadGradients = new float[threadCount][];
-        for (int i = 0; i < threadCount; i++)
-        {
-            int numItems = itemsPerThread;
-            int startIndex = itemsPerThread * i;
-
-            int threadIndex = i;
-            threads[i] = new Thread(() => threadGradients[threadIndex] = TrainBatchMultithread(numItems, startIndex, batch));
-            threads[i].Start();
-        }
-
-        for (int i = 0; i < threadCount; i++)
-        {
-            threads[i].Join();
-        }
-
-        for (int i = 0; i < threadCount; i++)
-        {
-            gradient = AddArrays(threadGradients[i], gradient);
-        }
-
-        AddToParameters(gradient);
-    }
-
-    float[] TrainBatchMultithread(int numItems, int startIndex, DatasetItem[] batch)
-    {
-        float[] gradient = new float[this.gradient.Length];
-
-        for (int i = 0; i < settings.batchSize; i++)
-        {
-            float[] currentGradient = TrainOneExample(batch[i]);
-            gradient = AddArrays(currentGradient, gradient);
-        }
-
-        return gradient;
-    }
-
-    float[] TrainOneExample(DatasetItem item)
-    {
-        SetInputs(item.input);
-        ForwardPropagate();
-
-        return BackPropagate(item.output);
     }
 
     DatasetItem[] NextBatch()

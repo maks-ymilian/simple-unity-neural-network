@@ -37,7 +37,7 @@ Shader "Unlit/NeuronInstance"
 
             float4 frag(v2f i) : SV_Target
             {
-                return float4(1, 1, 1, 1);
+                return float4(i.color.x, i.color.x, i.color.x, 1);
             }
             ENDCG
         }
