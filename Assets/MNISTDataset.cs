@@ -31,7 +31,10 @@ public class MNISTDataset : DatasetLoader
     {
         totalItemsDrawn++;
         if (totalItemsDrawn >= datasetString.Length)
+        {
             epoch++;
+            totalItemsDrawn = 0;
+        }
 
         int index = Random.Range(0, datasetString.Length);
         string itemString = datasetString[index];
