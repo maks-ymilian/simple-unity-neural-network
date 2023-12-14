@@ -34,7 +34,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float distance = minimum_distance(from, to, normalizedId);
     
-    float thickness = 0.05f;
+    float thickness = 0.04f;
     float color = saturate(lerp(1, 0, distance / thickness - 0.5f));
     
     float currentColor = outTexture[id.xy];

@@ -36,8 +36,8 @@ public class MNISTDataset : DatasetLoader
             totalItemsDrawn = 0;
         }
 
-        int index = Random.Range(0, datasetString.Length);
-        string itemString = datasetString[index];
+        int datasetIndex = Random.Range(0, datasetString.Length);
+        string itemString = datasetString[datasetIndex];
         string[] stringValues = itemString.Split(',');
         
         int label = int.Parse(stringValues[0]);
@@ -45,7 +45,12 @@ public class MNISTDataset : DatasetLoader
         float[] values = new float[stringValues.Length - 1];
         for (int i = 1; i < values.Length; i++)
         {
-            values[i] = (float)int.Parse(stringValues[i]) / 255;
+            int x = i % 28;
+            int y = Mathf.FloorToInt(i / 28);
+            y = -y + 27; // flip y axis
+            int index = y * 28 + x;
+
+            values[index] = (float)int.Parse(stringValues[i]) / 255;
         }
         
         DatasetItem item;

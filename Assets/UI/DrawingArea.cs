@@ -71,6 +71,9 @@ public class DrawingArea : MonoBehaviour
             lastPath.Clear();
         }
 
+        if (Input.GetKeyDown(KeyCode.Space))
+            lastPath.Clear();
+
         if (mouseHeld)
         {
             lastPath.Add(screenBounds.GetNormalizedVector(Input.mousePosition));
