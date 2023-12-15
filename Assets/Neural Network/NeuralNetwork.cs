@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -40,10 +41,8 @@ public partial class NeuralNetwork
 
             for (int neuronIndex = 0; neuronIndex < layer.neurons.Length; neuronIndex++)
             {
-                Neuron currentNeuron = new Neuron();
+                Neuron currentNeuron = new Neuron(layerIndex, neuronIndex);
                 layer.neurons[neuronIndex] = currentNeuron;
-
-                currentNeuron.index = new Vector2Int(layerIndex, neuronIndex);
 
                 if (layerIndex != sizes.Length - 1)
                     currentNeuron.edgesRight = new Edge[sizes[layerIndex + 1]];
@@ -73,6 +72,8 @@ public partial class NeuralNetwork
         }
 
         gradient = new float[parameterCount];
+
+        this.parameterCount = parameterCount;
     }
 
     public void SetInputs(float[] inputs)
@@ -227,10 +228,12 @@ public partial class NeuralNetwork
 
     public Layer[] layers;
 
-    Func<float, float> activationFunction;
-    Func<float, float> activationDerivative;
+    readonly Func<float, float> activationFunction;
+    readonly Func<float, float> activationDerivative;
 
-    Settings settings;
+    readonly Settings settings;
+
+    readonly int parameterCount;
 
     [Serializable]
     public class Settings
@@ -263,7 +266,18 @@ public partial class NeuralNetwork
 
         public Layer layer;
 
-        public Vector2Int index; // layer index, neuron index
+        public readonly int layerIndex;
+        public readonly int neuronIndex;
+
+        readonly int hashCode;
+
+        public Neuron(int layerIndex, int neuronIndex)
+        {
+            this.layerIndex = layerIndex;
+            this.neuronIndex = neuronIndex;
+
+            hashCode = layerIndex * 1000 + neuronIndex;
+        }
 
         public void EvaluateActivation(Func<float, float> activationFunction)
         {
@@ -280,7 +294,7 @@ public partial class NeuralNetwork
 
         public override int GetHashCode()
         {
-            return index.x * 1000 + index.y;
+            return hashCode;
         }
     }
 

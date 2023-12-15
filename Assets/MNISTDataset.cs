@@ -1,63 +1,93 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using UnityEngine;
 using DatasetItem = DatasetLoader.DatasetItem;
 
 public class MNISTDataset : DatasetLoader
 {
+    DatasetItem[] dataset;
     string[] datasetString;
+
     const string path = "D:\\Unity Projects\\N\\Assets\\MNIST_CSV\\mnist_train.csv";
 
     public int epoch { get; set; }
     int totalItemsDrawn;
 
+    const int parseThreadCount = 6;
+
     public MNISTDataset()
     {
         datasetString = File.ReadAllLines(path);
+        ParseDatasetString();
     }
 
-    public DatasetItem[] RandomBatch(int batchSize)
+    void ParseDatasetString()
     {
-        DatasetItem[] batch = new DatasetItem[batchSize];
+        dataset = new DatasetItem[datasetString.Length];
 
-        for (int i = 0; i < batchSize; i++)
+        Task[] tasks = new Task[parseThreadCount];
+        for (int i = 0; i < parseThreadCount; i++)
         {
-            batch[i] = RandomItem();
+            int threadId = i;
+
+            int length = datasetString.Length / parseThreadCount;
+            int startIndex = threadId * length;
+            if (threadId == parseThreadCount - 1)
+            {
+                int remainder = datasetString.Length - (length * parseThreadCount);
+                length += remainder;
+            }
+
+            Action action = () => ParseDatasetStringPortion(startIndex, length);
+            tasks[i] = new Task(action);
+            tasks[i].Start();
         }
 
-        return batch;
+        for (int i = 0; i < parseThreadCount; i++)
+        {
+            tasks[i].Wait();
+        }
+    }
+
+    void ParseDatasetStringPortion(int startIndex, int length)
+    {
+        for (int i = startIndex; i < startIndex + length; i++)
+        {
+            string[] stringValues = datasetString[i].Split(',');
+
+            byte label = byte.Parse(stringValues[0]);
+
+            float[] values = new float[stringValues.Length - 1];
+            for (int j = 1; j < values.Length; j++)
+            {
+                int x = j % 28;
+                int y = Mathf.FloorToInt(j / 28);
+                y = -y + 27; // flip y axis
+                int index = y * 28 + x;
+
+                values[index] = (float)byte.Parse(stringValues[j]) / 255;
+            }
+
+            var item = new DatasetItem();
+            item.output = LabelToTargetOutput(label);
+            item.input = values;
+            dataset[i] = item;
+        }
     }
 
     public DatasetItem RandomItem()
     {
         totalItemsDrawn++;
-        if (totalItemsDrawn >= datasetString.Length)
+        if (totalItemsDrawn >= dataset.Length)
         {
             epoch++;
             totalItemsDrawn = 0;
         }
 
-        int datasetIndex = Random.Range(0, datasetString.Length);
-        string itemString = datasetString[datasetIndex];
-        string[] stringValues = itemString.Split(',');
-        
-        int label = int.Parse(stringValues[0]);
-        
-        float[] values = new float[stringValues.Length - 1];
-        for (int i = 1; i < values.Length; i++)
-        {
-            int x = i % 28;
-            int y = Mathf.FloorToInt(i / 28);
-            y = -y + 27; // flip y axis
-            int index = y * 28 + x;
-
-            values[index] = (float)int.Parse(stringValues[i]) / 255;
-        }
-        
-        DatasetItem item;
-        item.output = LabelToTargetOutput(label);
-        item.input = values;
-
-        return item;
+        int index = UnityEngine.Random.Range(0, dataset.Length);
+        return dataset[index];
     }
 
     float[] LabelToTargetOutput(int label)

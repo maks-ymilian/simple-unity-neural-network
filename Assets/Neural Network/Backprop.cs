@@ -18,25 +18,26 @@ public partial class NeuralNetwork
             return null;
         }
 
-        List<float> gradient = new List<float>();
+        float[] gradient = new float[parameterCount];
 
         activationDerivativeCache.Clear();
         this.targetOutputs = targetOutputs;
 
+        int gradientIndex = 0;
         for (int i = 1; i < layers.Length; i++)
         {
             foreach (var neuron in layers[i].neurons)
             {
                 foreach (var edge in neuron.edgesLeft)
                 {
-                    gradient.Add(-CostDerivativeWeight(edge) * settings.learningRate);
+                    gradient[gradientIndex++] = -CostDerivativeWeight(edge) * settings.learningRate;
                 }
 
-                gradient.Add(-CostDerivativeBias(neuron) * settings.learningRate);
+                gradient[gradientIndex++] = -CostDerivativeBias(neuron) * settings.learningRate;
             }
         }
 
-        return gradient.ToArray();
+        return gradient;
     }
 
     /// <summary>
@@ -75,17 +76,17 @@ public partial class NeuralNetwork
     /// </summary>
     float CostDerivativeActivation(Neuron neuron)
     {
-        bool lastLayer = neuron.index.x == layers.Length - 1;
+        bool lastLayer = neuron.layerIndex == layers.Length - 1;
         if (lastLayer)
         {
-            int outputIndex = neuron.index.y;
+            int outputIndex = neuron.neuronIndex;
 
             float ca = 2 * (neuron.activation - targetOutputs[outputIndex]);
             return ca;
         }
 
         float layerSum = 0;
-        bool secondLastLayer = neuron.index.x == layers.Length - 2;
+        bool secondLastLayer = neuron.layerIndex == layers.Length - 2;
 
         for (int i = 0; i < neuron.edgesRight.Length; i++)
         {
@@ -98,7 +99,7 @@ public partial class NeuralNetwork
 
             if (secondLastLayer)
             {
-                int outputIndex = edge.parentNeuron.index.y;
+                int outputIndex = edge.parentNeuron.neuronIndex;
 
                 float ca = 2 * (edge.parentNeuron.activation - targetOutputs[outputIndex]);
                 chain *= ca;

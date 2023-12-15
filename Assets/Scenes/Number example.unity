@@ -763,7 +763,7 @@ MonoBehaviour:
     weightInitRange: {x: -0.3, y: 0.3}
     biasInitRange: {x: -0.1, y: 0.1}
     learningRate: 0.001
-    batchSize: 100
+    batchSize: 50
     activationFunction: 2
   diagram: {fileID: 336843272}
   drawingArea: {fileID: 432358805}
