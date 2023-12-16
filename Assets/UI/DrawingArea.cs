@@ -171,4 +171,14 @@ public class DrawingArea : MonoBehaviour
         texture.Apply();
         Graphics.CopyTexture(texture, renderTexture);
     }
+
+    public void SetRawTextureDataFloat(float[] floats)
+    {
+        byte[] bytes = new byte[floats.Length];
+        for (int i = 0; i < floats.Length; i++)
+        {
+            bytes[i] = (byte)Mathf.Clamp(floats[i] * 255, 0, 255);
+        }
+        SetRawTextureData(bytes);
+    }
 }

@@ -63,6 +63,11 @@ public class NumberExampleMain : MonoBehaviour
         infoText.text = info;
     }
 
+    public void SetRandomTestItem()
+    {
+        drawingArea.SetRawTextureDataFloat(mnist.RandomTestItem().input);
+    }
+
     int GetPredictedNumber()
     {
         float[] outputs = neuralNetwork.outputs;

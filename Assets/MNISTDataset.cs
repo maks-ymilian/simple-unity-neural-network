@@ -7,36 +7,39 @@ using DatasetItem = DatasetLoader.DatasetItem;
 
 public class MNISTDataset : DatasetLoader
 {
-    DatasetItem[] dataset;
-    string[] datasetString;
+    DatasetItem[] trainSet;
+    string[] trainSetString;
+    string[] testSetString;
 
-    const string path = "D:\\Unity Projects\\N\\Assets\\MNIST_CSV\\mnist_train.csv";
+    const string trainPath = "MNIST_CSV/mnist_train.csv";
+    const string testPath = "MNIST_CSV/mnist_test.csv";
 
     public int epoch { get; set; }
     int totalItemsDrawn;
 
-    const int parseThreadCount = 6;
+    const int parseThreadCount = 5;
 
     public MNISTDataset()
     {
-        datasetString = File.ReadAllLines(path);
+        trainSetString = File.ReadAllLines(Application.streamingAssetsPath + "/" + trainPath);
+        testSetString = File.ReadAllLines(Application.streamingAssetsPath + "/" + testPath);
         ParseDatasetString();
     }
 
     void ParseDatasetString()
     {
-        dataset = new DatasetItem[datasetString.Length];
+        trainSet = new DatasetItem[trainSetString.Length];
 
         Task[] tasks = new Task[parseThreadCount];
         for (int i = 0; i < parseThreadCount; i++)
         {
             int threadId = i;
 
-            int length = datasetString.Length / parseThreadCount;
+            int length = trainSetString.Length / parseThreadCount;
             int startIndex = threadId * length;
             if (threadId == parseThreadCount - 1)
             {
-                int remainder = datasetString.Length - (length * parseThreadCount);
+                int remainder = trainSetString.Length - (length * parseThreadCount);
                 length += remainder;
             }
 
@@ -55,39 +58,50 @@ public class MNISTDataset : DatasetLoader
     {
         for (int i = startIndex; i < startIndex + length; i++)
         {
-            string[] stringValues = datasetString[i].Split(',');
-
-            byte label = byte.Parse(stringValues[0]);
-
-            float[] values = new float[stringValues.Length - 1];
-            for (int j = 1; j < values.Length; j++)
-            {
-                int x = j % 28;
-                int y = Mathf.FloorToInt(j / 28);
-                y = -y + 27; // flip y axis
-                int index = y * 28 + x;
-
-                values[index] = (float)byte.Parse(stringValues[j]) / 255;
-            }
-
-            var item = new DatasetItem();
-            item.output = LabelToTargetOutput(label);
-            item.input = values;
-            dataset[i] = item;
+            trainSet[i] = ParseMNISTLine(trainSetString[i]);
         }
+    }
+
+    DatasetItem ParseMNISTLine(string line)
+    {
+        string[] stringValues = line.Split(',');
+
+        byte label = byte.Parse(stringValues[0]);
+
+        float[] values = new float[stringValues.Length - 1];
+        for (int j = 1; j < values.Length; j++)
+        {
+            int x = j % 28;
+            int y = Mathf.FloorToInt(j / 28);
+            y = -y + 27; // flip y axis
+            int index = y * 28 + x;
+
+            values[index] = (float)byte.Parse(stringValues[j]) / 255;
+        }
+
+        var item = new DatasetItem();
+        item.output = LabelToTargetOutput(label);
+        item.input = values;
+        return item;
     }
 
     public DatasetItem RandomItem()
     {
         totalItemsDrawn++;
-        if (totalItemsDrawn >= dataset.Length)
+        if (totalItemsDrawn >= trainSet.Length)
         {
             epoch++;
             totalItemsDrawn = 0;
         }
 
-        int index = UnityEngine.Random.Range(0, dataset.Length);
-        return dataset[index];
+        int index = UnityEngine.Random.Range(0, trainSet.Length);
+        return trainSet[index];
+    }
+
+    public DatasetItem RandomTestItem()
+    {
+        int index = UnityEngine.Random.Range(0, testSetString.Length);
+        return ParseMNISTLine(testSetString[index]);
     }
 
     float[] LabelToTargetOutput(int label)
