@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using UnityEngine;
 
 public partial class NeuralNetwork
 {
-    Dictionary<Neuron, float> activationDerivativeCache = new Dictionary<Neuron, float>();
+    float?[] activationDerivativeCache;
     float[] targetOutputs;
 
     /// <summary>
@@ -20,7 +21,7 @@ public partial class NeuralNetwork
 
         float[] gradient = new float[parameterCount];
 
-        activationDerivativeCache.Clear();
+        Array.Clear(activationDerivativeCache, 0, activationDerivativeCache.Length);
         this.targetOutputs = targetOutputs;
 
         int gradientIndex = 0;
@@ -61,13 +62,17 @@ public partial class NeuralNetwork
 
     float TryGetCachedCostDerivativeActivation(Neuron neuron)
     {
-        if (activationDerivativeCache.TryGetValue(neuron, out float derivative))
-            return derivative;
+        int cacheIndex = neuron.activationDerivativeCacheIndex;
+
+        float? cachedValue = activationDerivativeCache[cacheIndex];
+
+        if (cachedValue != null)
+            return (float)cachedValue;
         else
         {
-            derivative = CostDerivativeActivation(neuron);
-            activationDerivativeCache.Add(neuron, derivative);
-            return derivative;
+            cachedValue = CostDerivativeActivation(neuron);
+            activationDerivativeCache[cacheIndex] = cachedValue;
+            return (float)cachedValue;
         }
     }
 

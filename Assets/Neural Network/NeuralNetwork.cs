@@ -28,7 +28,8 @@ public partial class NeuralNetwork
                 break;
         }
 
-        int parameterCount = 0;
+        int weightCount = 0;
+        int biasCount = 0;
 
         int[] sizes = settings.layers;
         layers = new Layer[sizes.Length];
@@ -50,6 +51,9 @@ public partial class NeuralNetwork
                 if (layerIndex == 0)
                     continue;
 
+                currentNeuron.activationDerivativeCacheIndex = biasCount;
+                biasCount++;
+
                 currentNeuron.layer = layer;
 
                 int neuronEdgeCount = sizes[layerIndex - 1];
@@ -64,15 +68,14 @@ public partial class NeuralNetwork
 
                     currentNeuron.edgesLeft[edgeIndex] = currentEdge;
 
-                    parameterCount++;
+                    weightCount++;
                 }
-
-                parameterCount++;
             }
         }
 
+        int parameterCount = weightCount + biasCount;
         gradient = new float[parameterCount];
-
+        activationDerivativeCache = new float?[biasCount];
         this.parameterCount = parameterCount;
     }
 
@@ -268,6 +271,7 @@ public partial class NeuralNetwork
 
         public readonly int layerIndex;
         public readonly int neuronIndex;
+        public int activationDerivativeCacheIndex;
 
         readonly int hashCode;
 
