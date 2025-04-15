@@ -13,7 +13,7 @@ You can tweak the neural network hyperparameters and see how it impacts training
 - Bias Initialization Range: Min and max values for initial biases
 - Activation Function: Sigmoid, ReLU, LeakyReLU
 
-#Screenshots
+# Screenshots
 ![number recognition](https://raw.githubusercontent.com/maksymilllllllllllllian/simple-unity-neural-network/master/numbers.png)
 ![function learning](https://raw.githubusercontent.com/maksymilllllllllllllian/simple-unity-neural-network/master/function2.png)
 ![function learning](https://raw.githubusercontent.com/maksymilllllllllllllian/simple-unity-neural-network/master/function.png)
